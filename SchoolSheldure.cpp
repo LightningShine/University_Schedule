@@ -2,6 +2,8 @@
 #include <ctime>
 #include <string>
 #include <vector>
+#include <sstream>
+
 
 using namespace std;
 
@@ -21,31 +23,15 @@ class University_Subject
 		cin >> subject_name;
 		cout << "Enter subject status (-1 - every weeks, 0 - even weeks, 1 - odd weeks): ";
 		cin >> subject_status;
-		cout << "Enter subject availability (e.g., MWF for Monday, Wednesday, Friday): ";
-		char day;
+		cout << "Enter subject availability (e.g., AAA for Monday, Wednesday, Friday): ";
+		string day;
+		string storage;
 		vector<char> days;
-		subject_availability.clear();
-		while(true)
-		{
-			cin >> day;
-			if(day == '\0') break;
-			if(day == ' ' || day == ';' || day == '.' || day == ':' || day == '-' || day == '_' || day == ',')
-			{
-				subject_availability.push_back(string(days.begin(), days.end()));
-				days.clear();
-				continue;
-			} 
-			else if(day == '\n')
-			{
-				break;
-			}
-			else
-			{
-				days.push_back(day);
-			};
-
+		getline(cin, day); 
+		istringstream ss(day);
+		while (ss >> storage) {
+			subject_availability.push_back(storage);
 		}
-
 		cout << "Enter groups (comma separated): ";
 		cin >> groups;
 		cout << "Enter classroom number: ";
@@ -62,7 +48,7 @@ class University_Subject
 int main()
 {
 	time_t now = time(0);
-	char* dt = ctime(&now);
+	//char* dt = ctime(&now);
 	char output[50];
 	strftime(output, sizeof(output), "%A, %d, %B, %Y", localtime(&now));
 	cout << "The current local time is: " << output << endl;
