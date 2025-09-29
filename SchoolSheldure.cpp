@@ -3,19 +3,20 @@
 #include <string>
 #include <vector>
 #include <sstream>
-
+#include <time.h>
+#include <stdio.h>
 
 using namespace std;
 
 class University_Subject
 {
-	public:
+public:
 	string subject_name;
 	short int subject_status;
 	vector<string> subject_availability;
 	string groups;
 	int classroom;
-	int subject_time[2];
+	vector<string> subject_time;
 	string location;
 	void create_subject()
 	{
@@ -26,20 +27,53 @@ class University_Subject
 		cout << "Enter subject availability (e.g., AAA for Monday, Wednesday, Friday): ";
 		string day;
 		string storage;
-		vector<char> days;
-		getline(cin, day); 
+		cin.ignore(); // To ignore the newline character left in the input buffer
+		getline(cin,day);
 		istringstream ss(day);
 		while (ss >> storage) {
 			subject_availability.push_back(storage);
 		}
 		cout << "Enter groups (comma separated): ";
-		cin >> groups;
+		getline(cin, groups);
+		cout << "Enter subject time (as 13:00 - 14:30): ";
+		string time_input;
+		getline(cin,time_input);
+		stringstream time_stringstream(time_input);
+		while (getline(time_stringstream, time_input, '-'))
+		{
+			subject_time.push_back(time_input);
+		};
 		cout << "Enter classroom number: ";
 		cin >> classroom;
-		cout << "Enter subject time (start end in 24-hour format, e.g., 1300 1400): ";
-		cin >> subject_time[0] >> subject_time[1];
+		
 		cout << "Enter location: ";
 		cin >> location;
+	}
+	void class_info()
+	{
+		cout << "Subject Name: " << subject_name << endl;
+		cout << "Subject Status: ";
+		if(subject_status == -1) {
+			cout << "Every week" << endl;
+		}
+		else if (subject_status == 0) {
+			cout << "Even weeks" << endl;
+		}
+		else if (subject_status == 1) {
+			cout << "Odd weeks" << endl;
+		}
+
+			cout << "Subject Availability: ";
+		for (const auto& day : subject_availability) {
+			cout << day << ", ";
+		}
+			cout << endl;
+		cout << "Groups: " << groups << endl;
+			cout << "Classroom: " << classroom << endl;
+		cout << "Subject Time: ";
+			cout << subject_time[0] << "to" << subject_time[1];
+		cout << endl;
+			cout << "Location: " << location << endl;
 	}
 };
 
@@ -47,14 +81,20 @@ class University_Subject
 
 int main()
 {
+	struct tm newtime;
 	time_t now = time(0);
 	//char* dt = ctime(&now);
 	char output[50];
-	strftime(output, sizeof(output), "%A, %d, %B, %Y", localtime(&now));
+	localtime_s(&newtime, &now);
+	strftime(output, sizeof(output), "%A, %d %B %Y", &newtime);
 	cout << "The current local time is: " << output << endl;
 	University_Subject subject;
 	subject.create_subject();
-	cout << "Subject Created: " << subject.subject_name << endl;
+	system("cls");
+	cout << "Subject Created: " << subject.subject_name << "\n\n";
+	subject.class_info();
+	
 
 	return 0;
+	
 }
