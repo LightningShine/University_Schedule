@@ -1,0 +1,193 @@
+{
+  "incomes": [
+    {
+      "id": "i1",
+      "name": "Зарплата",
+      "cat": "work",
+      "vt": "fixed",
+      "val": 600,
+      "itype": "permanent",
+      "end": null
+    },
+    {
+      "id": "i2",
+      "name": "Ричард за Youtube Premium",
+      "cat": "other",
+      "vt": "fixed",
+      "val": 4.75,
+      "itype": "permanent",
+      "end": null,
+      "base": null
+    },
+    {
+      "id": "i3",
+      "name": "Юля за Youtube Premium",
+      "cat": "other",
+      "vt": "fixed",
+      "val": 9.5,
+      "itype": "permanent",
+      "end": null,
+      "base": null
+    },
+    {
+      "id": "i4",
+      "name": "Лариса за Youtube Premium",
+      "cat": "other",
+      "vt": "fixed",
+      "val": 4.75,
+      "itype": "permanent",
+      "end": null,
+      "base": null
+    },
+    {
+      "id": "i5",
+      "name": "Стипендия",
+      "cat": "stipend",
+      "vt": "fixed",
+      "val": 180,
+      "itype": "temporary",
+      "end": "2026-07-24"
+    }
+  ],
+  "expenses": [
+    {
+      "id": "e1",
+      "name": "Платёж Маме",
+      "cat": "housing",
+      "vt": "fixed",
+      "val": 150,
+      "billing": "monthly"
+    },
+    {
+      "id": "e2",
+      "name": "Copilot Pro",
+      "cat": "software",
+      "vt": "fixed",
+      "val": 10,
+      "billing": "monthly"
+    },
+    {
+      "id": "e3",
+      "name": "Youtube Premium",
+      "cat": "entertainment",
+      "vt": "fixed",
+      "val": 19.99,
+      "billing": "monthly"
+    },
+    {
+      "id": "e4",
+      "name": "rajagp.eu Домен",
+      "cat": "software",
+      "vt": "fixed",
+      "val": 7.99,
+      "billing": "annual"
+    },
+    {
+      "id": "e5",
+      "name": "rajagt.eu Домен",
+      "cat": "software",
+      "vt": "fixed",
+      "val": 7.99,
+      "billing": "annual"
+    },
+    {
+      "id": "e6",
+      "name": "Hostinger Почта",
+      "cat": "software",
+      "vt": "fixed",
+      "val": 19.08,
+      "billing": "annual"
+    },
+    {
+      "id": "xmq2eu3j5w1t",
+      "name": "Потребительская корзина",
+      "cat": "other",
+      "billing": "monthly",
+      "vt": "pct",
+      "val": 12.5
+    },
+    {
+      "id": "xmq2eu3n2lsx",
+      "name": "Потребительская корзина",
+      "cat": "other",
+      "billing": "monthly",
+      "vt": "pct",
+      "val": 12.5
+    }
+  ],
+  "assets": [
+    {
+      "id": "a1",
+      "atype": "Stocks",
+      "name": "Intel",
+      "cost": 383,
+      "invested": 126,
+      "it": "fixed",
+      "iv": 0
+    },
+    {
+      "id": "a2",
+      "atype": "Stocks",
+      "name": "Porsche",
+      "cost": 215.96,
+      "invested": 201,
+      "it": "pct",
+      "iv": 2.18
+    },
+    {
+      "id": "a3",
+      "atype": "Stocks",
+      "name": "500 Acc UCITS",
+      "cost": 196,
+      "invested": 97,
+      "it": "pct",
+      "iv": 0
+    },
+    {
+      "id": "a4",
+      "atype": "Stocks",
+      "name": "AAPL Apple",
+      "cost": 195.12,
+      "invested": 174,
+      "it": "pct",
+      "iv": 0.34
+    },
+    {
+      "id": "a5",
+      "atype": "Stocks",
+      "name": "Intel Corporation",
+      "cost": 166.63,
+      "invested": 150,
+      "it": "fixed",
+      "iv": 0.55
+    },
+    {
+      "id": "a6",
+      "atype": "Savings",
+      "name": "Накопление Revolut",
+      "cost": 720,
+      "invested": 720,
+      "it": "pct",
+      "iv": 1.28
+    },
+    {
+      "id": "xmq2es3vk437",
+      "atype": "RealEstate",
+      "name": "Revolut Bold Stack ( Robot )",
+      "cost": 870.83,
+      "invested": 800,
+      "it": "pct",
+      "iv": 0.11
+    },
+    {
+      "id": "xmq2fe6r14pw",
+      "atype": "Stocks",
+      "name": "ARI ( Real Estate )",
+      "cost": 0.97,
+      "invested": 0.97,
+      "it": "pct",
+      "iv": 9.12
+    }
+  ],
+  "liabilities": []
+}

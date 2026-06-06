@@ -1,0 +1,1101 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Поток Денег — Cash Flow</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+        body { font-family:'Inter',sans-serif; }
+        ::-webkit-scrollbar{width:5px;height:5px}
+        ::-webkit-scrollbar-track{background:#f1f5f9}
+        ::-webkit-scrollbar-thumb{background:#cbd5e1;border-radius:4px}
+        .no-scrollbar::-webkit-scrollbar{display:none}
+        .no-scrollbar{-ms-overflow-style:none;scrollbar-width:none}
+        @keyframes pulse-glow{0%,100%{box-shadow:0 0 0 0 rgba(16,185,129,.3)}50%{box-shadow:0 0 0 8px rgba(16,185,129,0)}}
+        .pulse-glow{animation:pulse-glow 2.5s infinite}
+        .tab-active{background:linear-gradient(135deg,#059669,#0d9488);color:white}
+        .modal-open{overflow:hidden}
+        .mode-btn.active{background:#dbeafe;color:#1d4ed8;font-weight:700;border-color:#93c5fd}
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col antialiased">
+
+<!-- HEADER -->
+<header class="bg-gradient-to-r from-emerald-700 to-teal-800 text-white shadow-lg sticky top-0 z-40">
+  <div class="max-w-7xl mx-auto px-4 py-3 flex flex-col sm:flex-row items-center justify-between gap-3">
+    <div class="flex items-center gap-3">
+      <div class="bg-white/15 p-2.5 rounded-xl border border-white/20">
+        <i class="fa-solid fa-sack-dollar text-2xl text-emerald-200"></i>
+      </div>
+      <div>
+        <h1 class="text-xl font-extrabold tracking-tight">ПОТОК ДЕНЕГ</h1>
+        <p class="text-[11px] text-emerald-200 font-medium">Personal Cash Flow Tracker</p>
+      </div>
+    </div>
+    <div class="flex flex-wrap items-center justify-center gap-2">
+      <button onclick="exportData()" class="bg-white/10 hover:bg-white/20 border border-white/20 text-white text-xs font-semibold py-2 px-3 rounded-lg transition flex items-center gap-1.5">
+        <i class="fa-solid fa-download"></i> Сохранить JSON
+      </button>
+      <label class="bg-white/10 hover:bg-white/20 border border-white/20 text-white text-xs font-semibold py-2 px-3 rounded-lg transition flex items-center gap-1.5 cursor-pointer">
+        <i class="fa-solid fa-upload"></i> Загрузить
+        <input type="file" id="importFile" class="hidden" onchange="importData(event)">
+      </label>
+      <button onclick="resetDemo()" class="bg-white/10 hover:bg-white/20 border border-white/20 text-white text-xs font-semibold py-2 px-3 rounded-lg transition flex items-center gap-1.5">
+        <i class="fa-solid fa-rotate-left"></i> Демо
+      </button>
+    </div>
+  </div>
+</header>
+
+<!-- TABS -->
+<div class="bg-white border-b border-slate-200 sticky top-[68px] z-30 shadow-sm">
+  <div class="max-w-7xl mx-auto px-4">
+    <nav class="flex space-x-1 overflow-x-auto no-scrollbar py-2">
+      <button onclick="switchTab('dashboard')" id="tab-dashboard" class="tab-btn tab-active px-4 py-2.5 rounded-lg text-sm font-semibold whitespace-nowrap transition-all flex items-center gap-2"><i class="fa-solid fa-chart-pie"></i> Главная</button>
+      <button onclick="switchTab('income')" id="tab-income" class="tab-btn px-4 py-2.5 rounded-lg text-sm font-semibold whitespace-nowrap transition-all text-slate-600 hover:bg-slate-100 flex items-center gap-2"><i class="fa-solid fa-arrow-trend-up text-emerald-500"></i> Доходы</button>
+      <button onclick="switchTab('expenses')" id="tab-expenses" class="tab-btn px-4 py-2.5 rounded-lg text-sm font-semibold whitespace-nowrap transition-all text-slate-600 hover:bg-slate-100 flex items-center gap-2"><i class="fa-solid fa-receipt text-rose-500"></i> Расходы</button>
+      <button onclick="switchTab('assets')" id="tab-assets" class="tab-btn px-4 py-2.5 rounded-lg text-sm font-semibold whitespace-nowrap transition-all text-slate-600 hover:bg-slate-100 flex items-center gap-2"><i class="fa-solid fa-building-columns text-blue-500"></i> Активы</button>
+      <button onclick="switchTab('liabilities')" id="tab-liabilities" class="tab-btn px-4 py-2.5 rounded-lg text-sm font-semibold whitespace-nowrap transition-all text-slate-600 hover:bg-slate-100 flex items-center gap-2"><i class="fa-solid fa-hand-holding-dollar text-amber-500"></i> Пассивы</button>
+    </nav>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div id="toast" class="fixed bottom-5 right-5 z-50 transform translate-y-20 opacity-0 transition-all duration-300 bg-slate-900 text-white py-3 px-5 rounded-xl shadow-2xl flex items-center gap-3 max-w-xs">
+  <span id="toast-icon" class="text-lg"><i class="fa-solid fa-circle-check text-emerald-400"></i></span>
+  <span id="toast-msg" class="text-sm font-medium"></span>
+</div>
+
+<main class="flex-grow max-w-7xl w-full mx-auto px-4 py-5 sm:px-6 lg:px-8">
+
+<!-- ========== DASHBOARD ========== -->
+<section id="content-dashboard" class="space-y-5">
+
+  <!-- KPI row -->
+  <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+    <div class="bg-gradient-to-br from-emerald-700 to-teal-800 rounded-2xl p-5 text-white shadow-lg col-span-2 lg:col-span-1 relative overflow-hidden pulse-glow">
+      <div class="absolute right-2 top-2 text-white/10 text-7xl pointer-events-none"><i class="fa-solid fa-wallet"></i></div>
+      <p class="text-[11px] font-bold uppercase tracking-wider text-emerald-200 mb-1">Cash Flow / мес</p>
+      <div class="text-3xl font-black tracking-tight" id="kpi-cf">0 €</div>
+      <p class="text-[10px] text-emerald-200/80 mt-1.5">Доходы минус все расходы</p>
+    </div>
+    <div class="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm relative overflow-hidden">
+      <div class="absolute right-2 top-2 text-emerald-50 text-6xl pointer-events-none"><i class="fa-solid fa-circle-dollar-to-slot"></i></div>
+      <p class="text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-1">Всего Доходов</p>
+      <div class="text-2xl font-black text-emerald-600" id="kpi-inc">0 €</div>
+      <p class="text-[10px] text-slate-400 mt-1">включая пассивный</p>
+    </div>
+    <div class="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm relative overflow-hidden">
+      <div class="absolute right-2 top-2 text-rose-50 text-6xl pointer-events-none"><i class="fa-solid fa-receipt"></i></div>
+      <p class="text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-1">Всего Расходов</p>
+      <div class="text-2xl font-black text-rose-600" id="kpi-exp">0 €</div>
+      <p class="text-[10px] text-slate-400 mt-1">подписки + кредиты</p>
+    </div>
+    <div class="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm relative overflow-hidden">
+      <div class="absolute right-2 top-2 text-indigo-50 text-6xl pointer-events-none"><i class="fa-solid fa-scale-balanced"></i></div>
+      <p class="text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-1">Чистая Стоимость</p>
+      <div class="text-2xl font-black" id="kpi-nw">0 €</div>
+      <p class="text-[10px] text-slate-400 mt-1">активы − долги</p>
+    </div>
+  </div>
+
+  <!-- Goal bar -->
+  <div class="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 rounded-2xl p-5 text-white shadow-xl relative overflow-hidden">
+    <div class="absolute right-0 top-0 translate-x-10 -translate-y-10 w-64 h-64 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none"></div>
+    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+      <div>
+        <span class="bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 text-[10px] font-bold px-3 py-1 rounded-full uppercase tracking-wider">Цель — Финансовая Свобода</span>
+        <h2 class="text-xl font-extrabold mt-1">Жить на пассивный доход</h2>
+        <p class="text-slate-300 text-xs max-w-lg mt-0.5">Когда <span class="text-emerald-400 font-semibold">Пассивный Доход</span> превысит <span class="text-rose-400 font-semibold">Все Расходы</span> — вы финансово свободны!</p>
+      </div>
+      <div class="bg-white/5 p-4 rounded-xl border border-white/10 text-center min-w-[100px]">
+        <div class="text-xs text-slate-400">Прогресс</div>
+        <div class="text-3xl font-black text-emerald-400" id="goal-pct">0%</div>
+      </div>
+    </div>
+    <div class="mt-5 space-y-2">
+      <div class="flex justify-between text-xs font-semibold text-slate-300">
+        <span class="text-emerald-400"><i class="fa-solid fa-bolt"></i> Пассивный: <span id="goal-passive">0 €</span></span>
+        <span class="text-rose-400"><i class="fa-solid fa-receipt"></i> Расходы: <span id="goal-exps">0 €</span></span>
+      </div>
+      <div class="w-full bg-slate-800 rounded-full h-4 overflow-hidden border border-slate-700 p-[2px]">
+        <div id="goal-bar" class="bg-gradient-to-r from-emerald-500 to-teal-400 h-full rounded-full transition-all duration-700" style="width:0%"></div>
+      </div>
+      <div id="goal-status" class="text-center text-xs text-slate-400 italic pt-1">Добавляйте доходные активы!</div>
+    </div>
+  </div>
+
+  <!-- Summary 2-col -->
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-5">
+    <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+      <div class="bg-emerald-50 border-b border-emerald-100 px-5 py-3 flex justify-between items-center">
+        <h3 class="font-black text-emerald-800 flex items-center gap-2"><i class="fa-solid fa-arrow-trend-up"></i> ДОХОДЫ / МЕС</h3>
+        <span class="font-black text-emerald-700 text-lg" id="d-sum-inc">0 €</span>
+      </div>
+      <div class="p-5 space-y-2 text-sm">
+        <div class="flex justify-between text-slate-600 border-b border-dashed border-slate-100 pb-1.5"><span>Постоянные:</span><span class="font-bold text-emerald-600" id="d-perm">0 €</span></div>
+        <div class="flex justify-between text-slate-600 border-b border-dashed border-slate-100 pb-1.5"><span>Временные:</span><span class="font-bold text-emerald-600" id="d-temp">0 €</span></div>
+        <div class="flex justify-between text-slate-600 border-b border-dashed border-slate-100 pb-1.5"><span>Пассивный (активы):</span><span class="font-bold text-emerald-600" id="d-passive">0 €</span></div>
+        <div id="d-inc-list" class="space-y-1 pt-1 max-h-36 overflow-y-auto"></div>
+      </div>
+    </div>
+    <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+      <div class="bg-rose-50 border-b border-rose-100 px-5 py-3 flex justify-between items-center">
+        <h3 class="font-black text-rose-800 flex items-center gap-2"><i class="fa-solid fa-receipt"></i> РАСХОДЫ / МЕС</h3>
+        <span class="font-black text-rose-700 text-lg" id="d-sum-exp">0 €</span>
+      </div>
+      <div class="p-5 space-y-2 text-sm">
+        <div class="flex justify-between text-slate-600 border-b border-dashed border-slate-100 pb-1.5"><span>Ежемесячные:</span><span class="font-bold text-rose-600" id="d-mon">0 €</span></div>
+        <div class="flex justify-between text-slate-600 border-b border-dashed border-slate-100 pb-1.5"><span>Годовые ÷ 12:</span><span class="font-bold text-rose-600" id="d-ann">0 €</span></div>
+        <div class="flex justify-between text-slate-600 border-b border-dashed border-slate-100 pb-1.5"><span>Кредитные платежи:</span><span class="font-bold text-rose-600" id="d-liab">0 €</span></div>
+        <div id="d-exp-list" class="space-y-1 pt-1 max-h-36 overflow-y-auto"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Assets & Liabilities mini -->
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-5">
+    <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+      <div class="bg-blue-50 border-b border-blue-100 px-5 py-3 flex justify-between items-center">
+        <h3 class="font-black text-blue-800 flex items-center gap-2"><i class="fa-solid fa-building-columns"></i> АКТИВЫ</h3>
+        <span class="font-black text-blue-700" id="d-assets">0 €</span>
+      </div>
+      <div id="d-assets-list" class="p-5 space-y-2 max-h-48 overflow-y-auto text-sm">
+        <div class="text-center py-3 text-slate-400 text-xs italic">Нет активов</div>
+      </div>
+    </div>
+    <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+      <div class="bg-amber-50 border-b border-amber-100 px-5 py-3 flex justify-between items-center">
+        <h3 class="font-black text-amber-800 flex items-center gap-2"><i class="fa-solid fa-hand-holding-dollar"></i> ПАССИВЫ</h3>
+        <span class="font-black text-amber-700" id="d-liabs">0 €</span>
+      </div>
+      <div id="d-liab-list" class="p-5 space-y-2 max-h-48 overflow-y-auto text-sm">
+        <div class="text-center py-3 text-slate-400 text-xs italic">Нет пассивов</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ========== INCOME ========== -->
+<section id="content-income" class="hidden space-y-5">
+  <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+    <div>
+      <h2 class="text-lg font-bold flex items-center gap-2"><i class="fa-solid fa-arrow-trend-up text-emerald-500"></i> Мои Доходы</h2>
+      <p class="text-xs text-slate-500 mt-0.5">Постоянные и временные (стипендия, контракт). Можно вводить сумму или % от базы.</p>
+    </div>
+    <button onclick="openModal('income')" class="bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-bold py-2.5 px-4 rounded-xl shadow transition flex items-center gap-2"><i class="fa-solid fa-plus"></i> Добавить доход</button>
+  </div>
+  <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+    <div class="bg-emerald-50 border-b border-emerald-100 px-5 py-3 flex justify-between items-center">
+      <div><h3 class="font-bold text-emerald-800 flex items-center gap-2"><i class="fa-solid fa-infinity"></i> Постоянные доходы</h3>
+      <p class="text-xs text-emerald-600/70 mt-0.5">Зарплата, фриланс — без срока окончания</p></div>
+      <span class="font-black text-emerald-700" id="perm-tot">0 €/мес</span>
+    </div>
+    <div class="overflow-x-auto">
+      <table class="min-w-full divide-y divide-slate-100 text-sm">
+        <thead class="bg-slate-50"><tr>
+          <th class="px-5 py-3 text-left text-xs font-bold text-slate-500 uppercase">Название</th>
+          <th class="px-5 py-3 text-left text-xs font-bold text-slate-500 uppercase">Категория</th>
+          <th class="px-5 py-3 text-right text-xs font-bold text-slate-500 uppercase">Сумма / мес</th>
+          <th class="px-5 py-3 text-center text-xs font-bold text-slate-500 uppercase">Действие</th>
+        </tr></thead>
+        <tbody id="perm-body" class="bg-white divide-y divide-slate-100">
+          <tr><td colspan="4" class="py-6 text-center text-slate-400 text-xs italic">Нет постоянных доходов</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+    <div class="bg-teal-50 border-b border-teal-100 px-5 py-3 flex justify-between items-center">
+      <div><h3 class="font-bold text-teal-800 flex items-center gap-2"><i class="fa-solid fa-hourglass-half"></i> Временные доходы (до даты)</h3>
+      <p class="text-xs text-teal-600/70 mt-0.5">Стипендия, контракт — с датой окончания</p></div>
+      <span class="font-black text-teal-700" id="temp-tot">0 €/мес</span>
+    </div>
+    <div class="overflow-x-auto">
+      <table class="min-w-full divide-y divide-slate-100 text-sm">
+        <thead class="bg-slate-50"><tr>
+          <th class="px-5 py-3 text-left text-xs font-bold text-slate-500 uppercase">Название</th>
+          <th class="px-5 py-3 text-left text-xs font-bold text-slate-500 uppercase">Категория</th>
+          <th class="px-5 py-3 text-right text-xs font-bold text-slate-500 uppercase">Сумма / мес</th>
+          <th class="px-5 py-3 text-left text-xs font-bold text-slate-500 uppercase">До даты</th>
+          <th class="px-5 py-3 text-left text-xs font-bold text-slate-500 uppercase">Осталось</th>
+          <th class="px-5 py-3 text-center text-xs font-bold text-slate-500 uppercase">Действие</th>
+        </tr></thead>
+        <tbody id="temp-body" class="bg-white divide-y divide-slate-100">
+          <tr><td colspan="6" class="py-6 text-center text-slate-400 text-xs italic">Нет временных доходов</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- ========== EXPENSES ========== -->
+<section id="content-expenses" class="hidden space-y-5">
+  <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+    <div>
+      <h2 class="text-lg font-bold flex items-center gap-2"><i class="fa-solid fa-receipt text-rose-500"></i> Мои Расходы</h2>
+      <p class="text-xs text-slate-500 mt-0.5">Ежемесячные и годовые (÷12). Можно задать % от дохода — например, 10% на еду.</p>
+    </div>
+    <button onclick="openModal('expense')" class="bg-rose-600 hover:bg-rose-700 text-white text-sm font-bold py-2.5 px-4 rounded-xl shadow transition flex items-center gap-2"><i class="fa-solid fa-plus"></i> Добавить расход</button>
+  </div>
+  <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+    <div class="bg-rose-50 border-b border-rose-100 px-5 py-3 flex justify-between items-center">
+      <div><h3 class="font-bold text-rose-800 flex items-center gap-2"><i class="fa-solid fa-calendar-days"></i> Ежемесячные расходы</h3>
+      <p class="text-xs text-rose-600/70 mt-0.5">Аренда, Netflix, телефон — платишь каждый месяц без конца</p></div>
+      <span class="font-black text-rose-700" id="mon-exp-tot">0 €/мес</span>
+    </div>
+    <div class="overflow-x-auto">
+      <table class="min-w-full divide-y divide-slate-100 text-sm">
+        <thead class="bg-slate-50"><tr>
+          <th class="px-5 py-3 text-left text-xs font-bold text-slate-500 uppercase">Название</th>
+          <th class="px-5 py-3 text-left text-xs font-bold text-slate-500 uppercase">Категория</th>
+          <th class="px-5 py-3 text-right text-xs font-bold text-slate-500 uppercase">Сумма / мес</th>
+          <th class="px-5 py-3 text-left text-xs font-bold text-slate-500 uppercase">Расчёт</th>
+          <th class="px-5 py-3 text-center text-xs font-bold text-slate-500 uppercase">Действие</th>
+        </tr></thead>
+        <tbody id="mon-exp-body" class="bg-white divide-y divide-slate-100">
+          <tr><td colspan="5" class="py-6 text-center text-slate-400 text-xs italic">Нет ежемесячных расходов</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+    <div class="bg-orange-50 border-b border-orange-100 px-5 py-3 flex justify-between items-center">
+      <div><h3 class="font-bold text-orange-800 flex items-center gap-2"><i class="fa-solid fa-calendar-check"></i> Годовые подписки (÷ 12)</h3>
+      <p class="text-xs text-orange-600/70 mt-0.5">Вводишь годовую сумму или % — считается ежемесячная доля</p></div>
+      <div class="text-right">
+        <div class="font-black text-orange-700" id="ann-exp-tot-m">0 €/мес</div>
+        <div class="text-[10px] text-orange-500" id="ann-exp-tot-y">0 € в год</div>
+      </div>
+    </div>
+    <div class="overflow-x-auto">
+      <table class="min-w-full divide-y divide-slate-100 text-sm">
+        <thead class="bg-slate-50"><tr>
+          <th class="px-5 py-3 text-left text-xs font-bold text-slate-500 uppercase">Название</th>
+          <th class="px-5 py-3 text-left text-xs font-bold text-slate-500 uppercase">Категория</th>
+          <th class="px-5 py-3 text-right text-xs font-bold text-slate-500 uppercase">В год</th>
+          <th class="px-5 py-3 text-right text-xs font-bold text-slate-500 uppercase">В месяц</th>
+          <th class="px-5 py-3 text-left text-xs font-bold text-slate-500 uppercase">Расчёт</th>
+          <th class="px-5 py-3 text-center text-xs font-bold text-slate-500 uppercase">Действие</th>
+        </tr></thead>
+        <tbody id="ann-exp-body" class="bg-white divide-y divide-slate-100">
+          <tr><td colspan="6" class="py-6 text-center text-slate-400 text-xs italic">Нет годовых подписок</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- ========== ASSETS ========== -->
+<section id="content-assets" class="hidden space-y-5">
+  <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+    <div>
+      <h2 class="text-lg font-bold flex items-center gap-2"><i class="fa-solid fa-building-columns text-blue-500"></i> Мои Активы</h2>
+      <p class="text-xs text-slate-500 mt-0.5">Акции, депозиты, недвижимость. Доход — фикс. сумма или % годовых (автоматически ÷12).</p>
+    </div>
+    <button onclick="openModal('asset')" class="bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold py-2.5 px-4 rounded-xl shadow transition flex items-center gap-2"><i class="fa-solid fa-plus"></i> Добавить актив</button>
+  </div>
+  <div class="bg-blue-50 border border-blue-200 rounded-xl p-4 text-sm text-blue-800 flex items-start gap-3">
+    <i class="fa-solid fa-circle-info text-blue-500 mt-0.5 shrink-0"></i>
+    <div>Доход от актива: <strong>фиксированная сумма</strong> (€45/мес аренда) или <strong>% годовых</strong> (2% год. от стоимости акций → ÷12 = доход/мес). Накопление 1.56% год., акции 2% год. — всё поддерживается.</div>
+  </div>
+  <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+    <div class="overflow-x-auto">
+      <table class="min-w-full divide-y divide-slate-100 text-sm">
+        <thead class="bg-slate-50"><tr>
+          <th class="px-5 py-3 text-left text-xs font-bold text-slate-500 uppercase">Тип</th>
+          <th class="px-5 py-3 text-left text-xs font-bold text-slate-500 uppercase">Название</th>
+          <th class="px-5 py-3 text-right text-xs font-bold text-slate-500 uppercase">Стоимость</th>
+          <th class="px-5 py-3 text-right text-xs font-bold text-slate-500 uppercase">Вложено</th>
+          <th class="px-5 py-3 text-right text-xs font-bold text-slate-500 uppercase">Доход / мес</th>
+          <th class="px-5 py-3 text-left text-xs font-bold text-slate-500 uppercase">Расчёт</th>
+          <th class="px-5 py-3 text-center text-xs font-bold text-slate-500 uppercase">Действие</th>
+        </tr></thead>
+        <tbody id="assets-body" class="bg-white divide-y divide-slate-100">
+          <tr><td colspan="7" class="py-8 text-center text-slate-400 text-xs italic">Нет активов</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="bg-slate-50 border-t border-slate-100 px-5 py-3 flex justify-between text-sm font-bold text-slate-700">
+      <span>Итого стоимость активов:</span><span id="assets-tot" class="text-blue-700">0 €</span>
+    </div>
+  </div>
+</section>
+
+<!-- ========== LIABILITIES ========== -->
+<section id="content-liabilities" class="hidden space-y-5">
+  <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+    <div>
+      <h2 class="text-lg font-bold flex items-center gap-2"><i class="fa-solid fa-hand-holding-dollar text-amber-500"></i> Мои Пассивы</h2>
+      <p class="text-xs text-slate-500 mt-0.5">Кредиты с конечной суммой — ипотека, автокредит, рассрочка. Платёж учитывается в расходах.</p>
+    </div>
+    <button onclick="openModal('liability')" class="bg-amber-600 hover:bg-amber-700 text-white text-sm font-bold py-2.5 px-4 rounded-xl shadow transition flex items-center gap-2"><i class="fa-solid fa-plus"></i> Добавить пассив</button>
+  </div>
+  <div class="bg-amber-50 border border-amber-200 rounded-xl p-4 text-sm text-amber-800 flex items-start gap-3">
+    <i class="fa-solid fa-triangle-exclamation text-amber-500 mt-0.5 shrink-0"></i>
+    <div>Пассив — кредит с конечной суммой долга, от которого нельзя отказаться. Ежемесячный платёж автоматически включается в расходы.</div>
+  </div>
+  <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+    <div class="overflow-x-auto">
+      <table class="min-w-full divide-y divide-slate-100 text-sm">
+        <thead class="bg-slate-50"><tr>
+          <th class="px-5 py-3 text-left text-xs font-bold text-slate-500 uppercase">Тип</th>
+          <th class="px-5 py-3 text-left text-xs font-bold text-slate-500 uppercase">Название</th>
+          <th class="px-5 py-3 text-right text-xs font-bold text-slate-500 uppercase">Остаток долга</th>
+          <th class="px-5 py-3 text-right text-xs font-bold text-slate-500 uppercase">Платёж / мес</th>
+          <th class="px-5 py-3 text-left text-xs font-bold text-slate-500 uppercase">Связан с активом</th>
+          <th class="px-5 py-3 text-center text-xs font-bold text-slate-500 uppercase">Действие</th>
+        </tr></thead>
+        <tbody id="liab-body" class="bg-white divide-y divide-slate-100">
+          <tr><td colspan="6" class="py-8 text-center text-slate-400 text-xs italic">Нет пассивов — отличная работа!</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="bg-slate-50 border-t border-slate-100 px-5 py-3 flex justify-between text-sm font-bold text-slate-700">
+      <span>Итого долг:</span><span id="liab-tot" class="text-amber-700">0 €</span>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<!-- ========== MODAL ========== -->
+<div id="modal-bg" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm hidden z-50 flex items-center justify-center p-4 overflow-y-auto">
+  <div id="modal-card" class="bg-white rounded-2xl shadow-2xl max-w-lg w-full transform transition-all duration-200 scale-95 my-auto">
+    <div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
+      <h3 id="modal-title" class="text-lg font-bold">Добавить</h3>
+      <button onclick="closeModal()" class="text-slate-400 hover:text-slate-600 w-8 h-8 flex items-center justify-center rounded-lg hover:bg-slate-100"><i class="fa-solid fa-xmark text-lg"></i></button>
+    </div>
+    <form id="modal-form" onsubmit="handleSubmit(event)" class="p-6 space-y-4">
+      <input type="hidden" id="m-type">
+      <input type="hidden" id="m-id">
+      <div id="m-fields" class="space-y-4"></div>
+      <div class="flex justify-end gap-3 pt-2 border-t border-slate-100">
+        <button type="button" onclick="closeModal()" class="px-4 py-2.5 text-sm font-semibold text-slate-600 hover:bg-slate-50 rounded-lg border border-slate-200 transition">Отмена</button>
+        <button type="submit" id="m-submit" class="px-5 py-2.5 text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg shadow transition">Добавить</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+// ================================================================
+//  STATE
+// ================================================================
+const SKEY = 'cfv3';
+
+const DEMO = {
+  incomes:[
+    {id:"i1",name:"Зарплата",cat:"work",vt:"fixed",val:600,itype:"permanent",end:null},
+    {id:"i2",name:"Ричард за Youtube",cat:"other",vt:"fixed",val:4.75,itype:"permanent",end:null},
+    {id:"i3",name:"Юля за Youtube",cat:"other",vt:"fixed",val:9.50,itype:"permanent",end:null},
+    {id:"i4",name:"Лариса за Youtube",cat:"other",vt:"fixed",val:4.75,itype:"permanent",end:null},
+    {id:"i5",name:"Стипендия",cat:"stipend",vt:"fixed",val:180,itype:"temporary",end:"2026-07-24"}
+  ],
+  expenses:[
+    {id:"e1",name:"Платёж Маме",cat:"housing",vt:"fixed",val:150,billing:"monthly"},
+    {id:"e2",name:"Copilot Pro",cat:"software",vt:"fixed",val:10,billing:"monthly"},
+    {id:"e3",name:"Youtube Premium",cat:"entertainment",vt:"fixed",val:19.99,billing:"monthly"},
+    {id:"e4",name:"rajagp.eu Домен",cat:"software",vt:"fixed",val:7.99,billing:"annual"},
+    {id:"e5",name:"rajagt.eu Домен",cat:"software",vt:"fixed",val:7.99,billing:"annual"},
+    {id:"e6",name:"Hostinger Почта",cat:"software",vt:"fixed",val:19.08,billing:"annual"}
+  ],
+  assets:[
+    {id:"a1",atype:"Stocks",name:"Intel",cost:383,invested:126,it:"fixed",iv:0},
+    {id:"a2",atype:"Stocks",name:"Porsche",cost:215.96,invested:201,it:"fixed",iv:0},
+    {id:"a3",atype:"Stocks",name:"500 Acc UCITS",cost:196,invested:97,it:"pct",iv:0},
+    {id:"a4",atype:"Stocks",name:"AAPL Apple",cost:195.12,invested:174,it:"fixed",iv:0},
+    {id:"a5",atype:"Stocks",name:"Intel Corporation",cost:166.63,invested:150,it:"fixed",iv:0.55},
+    {id:"a6",atype:"Savings",name:"Накопление Revolut",cost:720,invested:720,it:"fixed",iv:0}
+  ],
+  liabilities:[]
+};
+
+function loadState(){
+  try{const s=localStorage.getItem(SKEY);if(s)return JSON.parse(s);}catch(e){}
+  return JSON.parse(JSON.stringify(DEMO));
+}
+function saveState(){
+  try{localStorage.setItem(SKEY,JSON.stringify(S));}catch(e){}
+}
+
+let S = loadState();
+
+// ================================================================
+//  HELPERS
+// ================================================================
+function fmt(n){
+  n=n||0;
+  const abs=Math.abs(n);
+  const d=abs<1000?2:0;
+  return new Intl.NumberFormat('ru-RU',{style:'currency',currency:'EUR',minimumFractionDigits:d,maximumFractionDigits:d}).format(n);
+}
+function uid(){return"x"+Date.now().toString(36)+Math.random().toString(36).slice(2,5);}
+function toast(msg,type="ok"){
+  const el=document.getElementById("toast");
+  document.getElementById("toast-msg").textContent=msg;
+  const cfgs={ok:"text-emerald-400 fa-circle-check",warn:"text-amber-400 fa-triangle-exclamation",info:"text-indigo-400 fa-circle-info",err:"text-rose-400 fa-circle-xmark"};
+  const c=cfgs[type]||cfgs.ok;
+  document.getElementById("toast-icon").innerHTML=`<i class="fa-solid ${c.split(' ')[1]} ${c.split(' ')[0]}"></i>`;
+  el.classList.remove("translate-y-20","opacity-0");
+  el.classList.add("translate-y-0","opacity-100");
+  setTimeout(()=>{el.classList.remove("translate-y-0","opacity-100");el.classList.add("translate-y-20","opacity-0");},3000);
+}
+function daysTo(d){return d?Math.ceil((new Date(d)-new Date())/(864e5)):null;}
+function monthsTo(d){
+  if(!d)return null;
+  const e=new Date(d),n=new Date();
+  return Math.max(0,(e.getFullYear()-n.getFullYear())*12+(e.getMonth()-n.getMonth()));
+}
+
+// ================================================================
+//  CALCULATIONS
+// ================================================================
+// Income monthly value
+function incVal(inc){
+  if(inc.vt==="pct") return (inc.base||0)*(inc.val||0)/100;
+  return parseFloat(inc.val)||0;
+}
+// Asset monthly income
+function assetInc(a){
+  if(a.it==="pct") return (parseFloat(a.cost)||0)*(parseFloat(a.iv)||0)/100/12;
+  return parseFloat(a.iv)||0;
+}
+// Expense monthly value (uses totalIncome for pct)
+function expVal(exp, totalIncome){
+  let raw=0;
+  if(exp.vt==="pct") raw=(totalIncome||0)*(parseFloat(exp.val)||0)/100;
+  else raw=parseFloat(exp.val)||0;
+  return exp.billing==="annual"?raw/12:raw;
+}
+
+function calc(){
+  const now=new Date();
+  let permInc=0,tempInc=0;
+  S.incomes.forEach(i=>{
+    const v=incVal(i);
+    if(i.itype==="permanent") permInc+=v;
+    else if(!i.end||new Date(i.end)>now) tempInc+=v;
+  });
+  let passiveInc=0;
+  S.assets.forEach(a=>passiveInc+=assetInc(a));
+  const totalIncome=permInc+tempInc+passiveInc;
+
+  let monExp=0,annExp=0,liabPay=0;
+  S.expenses.forEach(exp=>{
+    const m=expVal(exp,totalIncome);
+    if(exp.billing==="monthly") monExp+=m; else annExp+=m;
+  });
+  S.liabilities.forEach(l=>liabPay+=parseFloat(l.pay)||0);
+
+  const totalExp=monExp+annExp+liabPay;
+  const cf=totalIncome-totalExp;
+  let totAssets=0; S.assets.forEach(a=>totAssets+=parseFloat(a.cost)||0);
+  let totDebt=0; S.liabilities.forEach(l=>totDebt+=parseFloat(l.debt)||0);
+  const nw=totAssets-totDebt;
+  const goalPct=totalExp>0?Math.min(Math.round(passiveInc/totalExp*100),999):(passiveInc>0?100:0);
+
+  return{permInc,tempInc,passiveInc,totalIncome,monExp,annExp,liabPay,totalExp,cf,totAssets,totDebt,nw,goalPct};
+}
+
+// ================================================================
+//  RENDER
+// ================================================================
+const ITYP={RealEstate:"🏠 Недвижимость",Stocks:"📈 Акции/ETF",Savings:"🏦 Депозит/Сбережения",Business:"🏪 Бизнес",Other:"💎 Другое"};
+const LTYP={Mortgage:"🏠 Ипотека",CarLoan:"🚗 Автокредит",CreditCard:"💳 Кредитная карта",Other:"📄 Другой кредит"};
+const ICAT={work:"💼 Работа",freelance:"💻 Фриланс",business:"🏪 Бизнес",rent:"🏠 Аренда",stipend:"🎓 Стипендия",dividend:"📈 Дивиденды",other:"💰 Другое"};
+const ECAT={housing:"🏠 Жильё",telecom:"📱 Связь",entertainment:"🎬 Развлечения",food:"🛒 Питание",transport:"🚗 Транспорт",insurance:"🛡️ Страховка",software:"💻 ПО/Сервисы",health:"❤️ Здоровье",education:"📚 Образование",other:"💳 Другое"};
+const AICO={RealEstate:"fa-house",Stocks:"fa-chart-line",Savings:"fa-piggy-bank",Business:"fa-briefcase",Other:"fa-gem"};
+
+function setEl(id,val){const e=document.getElementById(id);if(e)e.textContent=val;}
+function qEl(id){return document.getElementById(id);}
+
+function render(){
+  const d=calc();
+
+  // KPIs
+  const cf=qEl("kpi-cf");
+  cf.textContent=fmt(d.cf);
+  cf.className="text-3xl font-black tracking-tight "+(d.cf>=0?"text-emerald-200":"text-rose-300");
+  setEl("kpi-inc",fmt(d.totalIncome));
+  setEl("kpi-exp",fmt(d.totalExp));
+  const nwEl=qEl("kpi-nw");
+  nwEl.textContent=fmt(d.nw);
+  nwEl.className="text-2xl font-black "+(d.nw>=0?"text-indigo-600":"text-rose-600");
+
+  // Goal
+  setEl("goal-pct",d.goalPct+"%");
+  qEl("goal-bar").style.width=Math.min(d.goalPct,100)+"%";
+  setEl("goal-passive",fmt(d.passiveInc));
+  setEl("goal-exps",fmt(d.totalExp));
+  const bar=qEl("goal-bar"),gs=qEl("goal-status");
+  if(d.goalPct>=100){
+    gs.innerHTML="🎉 <span class='text-emerald-400 font-bold'>Финансовая свобода достигнута! Пассивный доход покрывает все расходы!</span>";
+    bar.className="bg-gradient-to-r from-emerald-400 to-green-300 h-full rounded-full transition-all duration-700 animate-pulse";
+  }else if(d.goalPct>=50){
+    gs.innerHTML="🔥 Вы на полпути к финансовой свободе!";
+    bar.className="bg-gradient-to-r from-teal-500 to-emerald-400 h-full rounded-full transition-all duration-700";
+  }else{
+    gs.innerHTML="🧗 Добавляйте доходные активы и сокращайте расходы!";
+    bar.className="bg-gradient-to-r from-indigo-500 to-teal-400 h-full rounded-full transition-all duration-700";
+  }
+
+  // Dashboard sums
+  setEl("d-sum-inc",fmt(d.totalIncome)); setEl("d-perm",fmt(d.permInc));
+  setEl("d-temp",fmt(d.tempInc)); setEl("d-passive",fmt(d.passiveInc));
+  setEl("d-sum-exp",fmt(d.totalExp)); setEl("d-mon",fmt(d.monExp));
+  setEl("d-ann",fmt(d.annExp)); setEl("d-liab",fmt(d.liabPay));
+  setEl("d-assets",fmt(d.totAssets)); setEl("d-liabs",fmt(d.totDebt));
+
+  // Dashboard income list
+  const dil=qEl("d-inc-list"); dil.innerHTML="";
+  const now=new Date();
+  S.incomes.forEach(inc=>{
+    const active=inc.itype==="permanent"||(!inc.end||new Date(inc.end)>now);
+    if(!active)return;
+    const v=incVal(inc);
+    const tag=inc.vt==="pct"?` <span class="text-[9px] text-indigo-400">${inc.val}%</span>`:"";
+    dil.innerHTML+=`<div class="flex justify-between text-xs"><span class="text-slate-600 truncate max-w-[180px]">${inc.name}${tag}</span><span class="font-semibold text-emerald-600">+${fmt(v)}</span></div>`;
+  });
+  S.assets.forEach(a=>{
+    const mi=assetInc(a);if(!mi)return;
+    const tag=a.it==="pct"?` <span class="text-[9px] text-indigo-400">${a.iv}%г.</span>`:"";
+    dil.innerHTML+=`<div class="flex justify-between text-xs"><span class="text-slate-400 italic truncate max-w-[180px]">${a.name}${tag}</span><span class="font-semibold text-emerald-500">+${fmt(mi)}</span></div>`;
+  });
+
+  // Dashboard expense list
+  const del2=qEl("d-exp-list"); del2.innerHTML="";
+  S.expenses.forEach(exp=>{
+    const m=expVal(exp,d.totalIncome);
+    const tag=exp.billing==="annual"?` <span class="text-[9px] text-orange-400">(÷12)</span>`:"";
+    const ptag=exp.vt==="pct"?` <span class="text-[9px] text-indigo-400">${exp.val}%</span>`:"";
+    del2.innerHTML+=`<div class="flex justify-between text-xs"><span class="text-slate-600 truncate max-w-[180px]">${exp.name}${tag}${ptag}</span><span class="font-semibold text-rose-500">-${fmt(m)}</span></div>`;
+  });
+  S.liabilities.forEach(l=>{
+    del2.innerHTML+=`<div class="flex justify-between text-xs"><span class="text-slate-400 italic truncate max-w-[180px]">${l.name}</span><span class="font-semibold text-amber-600">-${fmt(l.pay)}</span></div>`;
+  });
+
+  // Dashboard assets
+  const dal=qEl("d-assets-list");
+  if(!S.assets.length){dal.innerHTML=`<div class="text-center py-3 text-slate-400 text-xs italic">Нет активов</div>`;}
+  else{
+    dal.innerHTML="";
+    S.assets.forEach(a=>{
+      const mi=assetInc(a);
+      const itag=a.it==="pct"?`<span class="text-[9px] text-indigo-400 ml-1">${a.iv}% год.</span>`:"";
+      dal.innerHTML+=`<div class="flex items-center justify-between p-2.5 bg-blue-50/50 border border-blue-100 rounded-lg text-xs">
+        <div class="flex items-center gap-2"><i class="fa-solid ${AICO[a.atype]||"fa-gem"} text-blue-400"></i><span class="font-medium truncate max-w-[140px]">${a.name}</span></div>
+        <div class="text-right"><div class="font-bold text-blue-700">${fmt(a.cost)}</div>${mi?`<div class="text-emerald-600 font-semibold">+${fmt(mi)}/мес${itag}</div>`:""}</div>
+      </div>`;
+    });
+  }
+
+  // Dashboard liabilities
+  const dll=qEl("d-liab-list");
+  if(!S.liabilities.length){dll.innerHTML=`<div class="text-center py-3 text-slate-400 text-xs italic">Нет пассивов — отлично!</div>`;}
+  else{
+    dll.innerHTML="";
+    const lic={Mortgage:"fa-house",CarLoan:"fa-car",CreditCard:"fa-credit-card",Other:"fa-file-invoice-dollar"};
+    S.liabilities.forEach(l=>{
+      dll.innerHTML+=`<div class="flex items-center justify-between p-2.5 bg-amber-50/50 border border-amber-100 rounded-lg text-xs">
+        <div class="flex items-center gap-2"><i class="fa-solid ${lic[l.ltype]||"fa-file-invoice-dollar"} text-amber-400"></i><span class="font-medium truncate max-w-[130px]">${l.name}</span></div>
+        <div class="text-right"><div class="font-bold text-amber-700">${fmt(l.debt)}</div><div class="text-rose-500">-${fmt(l.pay)}/мес</div></div>
+      </div>`;
+    });
+  }
+
+  renderIncome(d); renderExpenses(d); renderAssets(); renderLiab();
+  saveState();
+}
+
+function renderIncome(d){
+  const now=new Date();
+  let pt=0;
+  const pb=qEl("perm-body");
+  const perms=S.incomes.filter(i=>i.itype==="permanent");
+  pb.innerHTML=perms.length?"":`<tr><td colspan="4" class="py-6 text-center text-slate-400 text-xs italic">Нет постоянных доходов</td></tr>`;
+  perms.forEach(inc=>{
+    const v=incVal(inc); pt+=v;
+    const calc=inc.vt==="pct"?`<span class="text-[10px] text-indigo-500 bg-indigo-50 px-1.5 py-0.5 rounded">${inc.val}% от ${fmt(inc.base)}</span>`:"";
+    pb.innerHTML+=`<tr class="hover:bg-slate-50 transition">
+      <td class="px-5 py-3 font-medium">${inc.name}</td>
+      <td class="px-5 py-3 text-slate-500">${ICAT[inc.cat]||inc.cat}</td>
+      <td class="px-5 py-3 text-right"><div class="font-bold text-emerald-600">${fmt(v)}</div>${calc}</td>
+      <td class="px-5 py-3 text-center">
+        <button onclick="openModal('income','${inc.id}')" class="text-indigo-500 hover:text-indigo-700 mr-2"><i class="fa-solid fa-pen"></i></button>
+        <button onclick="del('income','${inc.id}')" class="text-rose-400 hover:text-rose-600"><i class="fa-solid fa-trash"></i></button>
+      </td></tr>`;
+  });
+  setEl("perm-tot",fmt(pt)+"/мес");
+
+  let tt=0;
+  const tb=qEl("temp-body");
+  const temps=S.incomes.filter(i=>i.itype==="temporary");
+  tb.innerHTML=temps.length?"":`<tr><td colspan="6" class="py-6 text-center text-slate-400 text-xs italic">Нет временных доходов</td></tr>`;
+  temps.forEach(inc=>{
+    const active=!inc.end||new Date(inc.end)>now;
+    if(active) tt+=incVal(inc);
+    const days=daysTo(inc.end), months=monthsTo(inc.end);
+    let tl="∞",tc="text-slate-400";
+    if(inc.end){if(days<=0){tl="Истёк";tc="text-red-500 font-bold";}else if(days<=30){tl=days+"дн.";tc="text-amber-500 font-semibold";}else{tl=months+"мес.";tc="text-emerald-600";}}
+    const calc=inc.vt==="pct"?`<div class="text-[10px] text-indigo-500">${inc.val}% от ${fmt(inc.base)}</div>`:"";
+    tb.innerHTML+=`<tr class="hover:bg-slate-50 transition${!active?" opacity-40":""}">
+      <td class="px-5 py-3 font-medium">${inc.name}</td>
+      <td class="px-5 py-3 text-slate-500">${ICAT[inc.cat]||inc.cat}</td>
+      <td class="px-5 py-3 text-right"><div class="font-bold text-teal-600">${fmt(incVal(inc))}</div>${calc}</td>
+      <td class="px-5 py-3 text-slate-500 text-xs">${inc.end?new Date(inc.end).toLocaleDateString('ru-RU'):"—"}</td>
+      <td class="px-5 py-3 text-xs ${tc}">${tl}</td>
+      <td class="px-5 py-3 text-center">
+        <button onclick="openModal('income','${inc.id}')" class="text-indigo-500 hover:text-indigo-700 mr-2"><i class="fa-solid fa-pen"></i></button>
+        <button onclick="del('income','${inc.id}')" class="text-rose-400 hover:text-rose-600"><i class="fa-solid fa-trash"></i></button>
+      </td></tr>`;
+  });
+  setEl("temp-tot",fmt(tt)+"/мес");
+}
+
+function renderExpenses(d){
+  const ti=d.totalIncome;
+  let mt=0;
+  const mb=qEl("mon-exp-body");
+  const mons=S.expenses.filter(e=>e.billing==="monthly");
+  mb.innerHTML=mons.length?"":`<tr><td colspan="5" class="py-6 text-center text-slate-400 text-xs italic">Нет ежемесячных расходов</td></tr>`;
+  mons.forEach(exp=>{
+    const m=expVal(exp,ti); mt+=m;
+    const calc=exp.vt==="pct"?`<span class="text-[10px] text-indigo-500 bg-indigo-50 px-1.5 py-0.5 rounded">${exp.val}% от дохода</span>`:`<span class="text-[10px] text-slate-400">фикс.</span>`;
+    mb.innerHTML+=`<tr class="hover:bg-slate-50 transition">
+      <td class="px-5 py-3 font-medium">${exp.name}</td>
+      <td class="px-5 py-3 text-slate-500">${ECAT[exp.cat]||exp.cat}</td>
+      <td class="px-5 py-3 text-right font-bold text-rose-600">${fmt(m)}</td>
+      <td class="px-5 py-3">${calc}</td>
+      <td class="px-5 py-3 text-center">
+        <button onclick="openModal('expense','${exp.id}')" class="text-indigo-500 hover:text-indigo-700 mr-2"><i class="fa-solid fa-pen"></i></button>
+        <button onclick="del('expense','${exp.id}')" class="text-rose-400 hover:text-rose-600"><i class="fa-solid fa-trash"></i></button>
+      </td></tr>`;
+  });
+  setEl("mon-exp-tot",fmt(mt)+"/мес");
+
+  let at=0;
+  const ab=qEl("ann-exp-body");
+  const anns=S.expenses.filter(e=>e.billing==="annual");
+  ab.innerHTML=anns.length?"":`<tr><td colspan="6" class="py-6 text-center text-slate-400 text-xs italic">Нет годовых подписок</td></tr>`;
+  anns.forEach(exp=>{
+    const m=expVal(exp,ti); at+=m;
+    const yr=exp.vt==="fixed"?parseFloat(exp.val)||0:m*12;
+    const calc=exp.vt==="pct"?`<span class="text-[10px] text-indigo-500 bg-indigo-50 px-1.5 py-0.5 rounded">${exp.val}% дохода/год</span>`:`<span class="text-[10px] text-slate-400">фикс.</span>`;
+    ab.innerHTML+=`<tr class="hover:bg-slate-50 transition">
+      <td class="px-5 py-3 font-medium">${exp.name}</td>
+      <td class="px-5 py-3 text-slate-500">${ECAT[exp.cat]||exp.cat}</td>
+      <td class="px-5 py-3 text-right text-orange-700 font-semibold">${fmt(yr)}</td>
+      <td class="px-5 py-3 text-right font-bold text-rose-600">${fmt(m)}</td>
+      <td class="px-5 py-3">${calc}</td>
+      <td class="px-5 py-3 text-center">
+        <button onclick="openModal('expense','${exp.id}')" class="text-indigo-500 hover:text-indigo-700 mr-2"><i class="fa-solid fa-pen"></i></button>
+        <button onclick="del('expense','${exp.id}')" class="text-rose-400 hover:text-rose-600"><i class="fa-solid fa-trash"></i></button>
+      </td></tr>`;
+  });
+  setEl("ann-exp-tot-m",fmt(at)+"/мес");
+  setEl("ann-exp-tot-y",fmt(at*12)+" в год");
+}
+
+function renderAssets(){
+  let tv=0;
+  const body=qEl("assets-body");
+  if(!S.assets.length){body.innerHTML=`<tr><td colspan="7" class="py-8 text-center text-slate-400 text-xs italic">Нет активов</td></tr>`;}
+  else{
+    body.innerHTML="";
+    S.assets.forEach(a=>{
+      tv+=parseFloat(a.cost)||0;
+      const mi=assetInc(a);
+      let calc="—";
+      if(mi>0) calc=a.it==="pct"?`<span class="text-[10px] text-indigo-500 bg-indigo-50 px-1.5 py-0.5 rounded">${a.iv}% год. → ${fmt(mi)}/мес</span>`:`<span class="text-[10px] text-slate-400">фикс. €/мес</span>`;
+      body.innerHTML+=`<tr class="hover:bg-blue-50/30 transition">
+        <td class="px-5 py-3 text-sm text-slate-600">${ITYP[a.atype]||a.atype}</td>
+        <td class="px-5 py-3 font-medium">${a.name}</td>
+        <td class="px-5 py-3 text-right font-bold text-blue-700">${fmt(a.cost)}</td>
+        <td class="px-5 py-3 text-right text-slate-600">${fmt(a.invested)}</td>
+        <td class="px-5 py-3 text-right font-bold ${mi>0?"text-emerald-600":"text-slate-400"}">${mi>0?"+"+fmt(mi):"—"}</td>
+        <td class="px-5 py-3">${calc}</td>
+        <td class="px-5 py-3 text-center">
+          <button onclick="openModal('asset','${a.id}')" class="text-indigo-500 hover:text-indigo-700 mr-2"><i class="fa-solid fa-pen"></i></button>
+          <button onclick="del('asset','${a.id}')" class="text-rose-400 hover:text-rose-600"><i class="fa-solid fa-trash"></i></button>
+        </td></tr>`;
+    });
+  }
+  setEl("assets-tot",fmt(tv));
+}
+
+function renderLiab(){
+  let td=0;
+  const body=qEl("liab-body");
+  if(!S.liabilities.length){body.innerHTML=`<tr><td colspan="6" class="py-8 text-center text-slate-400 text-xs italic">Нет пассивов — отличная работа!</td></tr>`;}
+  else{
+    body.innerHTML="";
+    S.liabilities.forEach(l=>{
+      td+=parseFloat(l.debt)||0;
+      const linked=l.lasset?S.assets.find(a=>a.id===l.lasset):null;
+      const lic={Mortgage:"fa-house",CarLoan:"fa-car",CreditCard:"fa-credit-card",Other:"fa-file-invoice-dollar"};
+      body.innerHTML+=`<tr class="hover:bg-amber-50/30 transition">
+        <td class="px-5 py-3 text-sm text-slate-600">${LTYP[l.ltype]||l.ltype}</td>
+        <td class="px-5 py-3 font-medium">${l.name}</td>
+        <td class="px-5 py-3 text-right font-bold text-amber-700">${fmt(l.debt)}</td>
+        <td class="px-5 py-3 text-right font-bold text-rose-600">-${fmt(l.pay)}</td>
+        <td class="px-5 py-3 text-sm ${linked?"text-blue-600":"text-slate-400 italic"}">${linked?linked.name:"—"}</td>
+        <td class="px-5 py-3 text-center">
+          <button onclick="openModal('liability','${l.id}')" class="text-indigo-500 hover:text-indigo-700 mr-2"><i class="fa-solid fa-pen"></i></button>
+          <button onclick="del('liability','${l.id}')" class="text-rose-400 hover:text-rose-600"><i class="fa-solid fa-trash"></i></button>
+        </td></tr>`;
+    });
+  }
+  setEl("liab-tot",fmt(td));
+}
+
+// ================================================================
+//  TABS
+// ================================================================
+function switchTab(id){
+  ["dashboard","income","expenses","assets","liabilities"].forEach(t=>{
+    qEl(`content-${t}`).classList.add("hidden");
+    qEl(`tab-${t}`).className="tab-btn px-4 py-2.5 rounded-lg text-sm font-semibold whitespace-nowrap transition-all text-slate-600 hover:bg-slate-100 flex items-center gap-2";
+  });
+  qEl(`content-${id}`).classList.remove("hidden");
+  qEl(`tab-${id}`).className="tab-btn tab-active px-4 py-2.5 rounded-lg text-sm font-semibold whitespace-nowrap transition-all flex items-center gap-2";
+}
+
+// ================================================================
+//  MODAL
+// ================================================================
+// Shared CSS classes
+const INP="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm focus:ring-2 focus:ring-indigo-400 focus:border-indigo-400 outline-none";
+const LBL="block text-xs font-semibold text-slate-600 mb-1";
+const ICATOPTS=Object.entries(ICAT).map(([v,l])=>`<option value="${v}">${l}</option>`).join("");
+const ECATOPTS=Object.entries(ECAT).map(([v,l])=>`<option value="${v}">${l}</option>`).join("");
+
+function modeToggle(btns,blocks){
+  // btns: [[btnId,blockId],...]
+  btns.forEach(([bid,blkid])=>{
+    const b=qEl(bid),blk=qEl(blkid);
+    if(!b||!blk)return;
+    b.onclick=()=>{
+      btns.forEach(([b2,blk2])=>{
+        qEl(b2)?.classList.remove("active");
+        qEl(blk2)?.classList.add("hidden");
+      });
+      b.classList.add("active");
+      blk.classList.remove("hidden");
+    };
+  });
+}
+
+function openModal(type,id){
+  qEl("m-type").value=type;
+  qEl("m-id").value=id||"";
+  const colors={income:"bg-emerald-600 hover:bg-emerald-700",expense:"bg-rose-600 hover:bg-rose-700",asset:"bg-blue-600 hover:bg-blue-700",liability:"bg-amber-600 hover:bg-amber-700"};
+  const labels={income:"доход",expense:"расход",asset:"актив",liability:"пассив"};
+  let ex=null;
+  if(id){const maps={income:S.incomes,expense:S.expenses,asset:S.assets,liability:S.liabilities};ex=(maps[type]||[]).find(x=>x.id===id);}
+  const isEdit=!!ex;
+  qEl("modal-title").textContent=(isEdit?"Редактировать ":"Добавить ")+labels[type];
+  const sb=qEl("m-submit");
+  sb.textContent=isEdit?"Сохранить":"Добавить";
+  sb.className=`px-5 py-2.5 text-sm font-semibold text-white ${colors[type]} rounded-lg shadow transition`;
+
+  const mf=qEl("m-fields");
+
+  if(type==="income"){
+    const it=ex?.itype||"permanent";
+    const vt=ex?.vt||"fixed";
+    mf.innerHTML=`
+      <div><label class="${LBL}">Название</label><input type="text" id="f-name" value="${ex?.name||""}" required placeholder="Зарплата, Стипендия..." class="${INP}"></div>
+      <div><label class="${LBL}">Категория</label><select id="f-cat" class="${INP}">${ICATOPTS.replace(`value="${ex?.cat||"work"}"`,`value="${ex?.cat||"work"}" selected`)}</select></div>
+
+      <div class="bg-slate-50 rounded-xl p-3 border border-slate-200 space-y-3">
+        <p class="text-xs font-bold text-slate-600 uppercase tracking-wide">💡 Способ ввода суммы</p>
+        <div class="flex gap-2">
+          <button type="button" id="vt-fix-btn" class="mode-btn flex-1 py-2 px-3 rounded-lg text-sm border border-slate-200 transition${vt==="fixed"?" active":""}">💶 Фикс. сумма (€)</button>
+          <button type="button" id="vt-pct-btn" class="mode-btn flex-1 py-2 px-3 rounded-lg text-sm border border-slate-200 transition${vt==="pct"?" active":""}">% от базы</button>
+        </div>
+        <div id="vt-fix-blk" class="${vt==="pct"?"hidden":""}">
+          <label class="${LBL}">Сумма в месяц (€)</label>
+          <div class="relative"><input type="number" id="f-val" step="0.01" min="0" value="${vt!=="pct"?(ex?.val||""):""}" placeholder="0.00" class="${INP} pr-10"><span class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs font-bold">€</span></div>
+        </div>
+        <div id="vt-pct-blk" class="${vt==="fixed"?"hidden":""}">
+          <label class="${LBL}">База (€) — например ваша зарплата</label>
+          <div class="relative"><input type="number" id="f-base" step="0.01" min="0" value="${ex?.base||""}" placeholder="600" oninput="prvInc()" class="${INP} pr-10"><span class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs font-bold">€</span></div>
+          <label class="${LBL} mt-2">Процент (%)</label>
+          <div class="relative"><input type="number" id="f-pct" step="0.01" min="0" max="100" value="${vt==="pct"?(ex?.val||""):""}" placeholder="10" oninput="prvInc()" class="${INP} pr-10"><span class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs font-bold">%</span></div>
+          <p id="prv-inc" class="text-xs text-emerald-600 mt-1 min-h-[16px]"></p>
+        </div>
+      </div>
+
+      <div><label class="${LBL}">Тип дохода</label>
+        <div class="flex gap-3">
+          <label class="flex-1 flex items-center gap-2 p-3 border rounded-xl cursor-pointer transition${it==="permanent"?" border-emerald-400 bg-emerald-50":" border-slate-200"}" id="lbl-perm">
+            <input type="radio" name="itype" value="permanent" ${it==="permanent"?"checked":""} onchange="togIT()" class="accent-emerald-500">
+            <div><div class="text-sm font-semibold">♾️ Постоянный</div><div class="text-[11px] text-slate-500">Без срока</div></div>
+          </label>
+          <label class="flex-1 flex items-center gap-2 p-3 border rounded-xl cursor-pointer transition${it==="temporary"?" border-teal-400 bg-teal-50":" border-slate-200"}" id="lbl-temp">
+            <input type="radio" name="itype" value="temporary" ${it==="temporary"?"checked":""} onchange="togIT()" class="accent-teal-500">
+            <div><div class="text-sm font-semibold">⏳ Временный</div><div class="text-[11px] text-slate-500">Стипендия, контракт</div></div>
+          </label>
+        </div>
+      </div>
+      <div id="end-blk" class="${it==="temporary"?"":"hidden"}">
+        <label class="${LBL}">Действует до</label>
+        <input type="date" id="f-end" value="${ex?.end||""}" class="${INP}">
+      </div>`;
+    setTimeout(()=>{
+      modeToggle([["vt-fix-btn","vt-fix-blk"],["vt-pct-btn","vt-pct-blk"]]);
+      prvInc();
+    },10);
+
+  }else if(type==="expense"){
+    const billing=ex?.billing||"monthly";
+    const vt=ex?.vt||"fixed";
+    mf.innerHTML=`
+      <div><label class="${LBL}">Название</label><input type="text" id="f-name" value="${ex?.name||""}" required placeholder="Netflix, Аренда..." class="${INP}"></div>
+      <div><label class="${LBL}">Категория</label><select id="f-cat" class="${INP}">${ECATOPTS.replace(`value="${ex?.cat||"other"}"`,`value="${ex?.cat||"other"}" selected`)}</select></div>
+      <div><label class="${LBL}">Период</label>
+        <div class="flex gap-3">
+          <label class="flex-1 flex items-center gap-2 p-3 border rounded-xl cursor-pointer transition${billing==="monthly"?" border-rose-400 bg-rose-50":" border-slate-200"}">
+            <input type="radio" name="billing" value="monthly" ${billing==="monthly"?"checked":""} onchange="togBill()" class="accent-rose-500">
+            <div><div class="text-sm font-semibold">📅 Ежемесячная</div><div class="text-[11px] text-slate-500">Вводишь за месяц</div></div>
+          </label>
+          <label class="flex-1 flex items-center gap-2 p-3 border rounded-xl cursor-pointer transition${billing==="annual"?" border-orange-400 bg-orange-50":" border-slate-200"}">
+            <input type="radio" name="billing" value="annual" ${billing==="annual"?"checked":""} onchange="togBill()" class="accent-orange-500">
+            <div><div class="text-sm font-semibold">📆 Годовая (÷12)</div><div class="text-[11px] text-slate-500">Делится на 12</div></div>
+          </label>
+        </div>
+      </div>
+
+      <div class="bg-slate-50 rounded-xl p-3 border border-slate-200 space-y-3">
+        <p class="text-xs font-bold text-slate-600 uppercase tracking-wide">💡 Способ ввода суммы</p>
+        <div class="flex gap-2">
+          <button type="button" id="evt-fix-btn" class="mode-btn flex-1 py-2 px-3 rounded-lg text-sm border border-slate-200 transition${vt==="fixed"?" active":""}">💶 Фикс. сумма (€)</button>
+          <button type="button" id="evt-pct-btn" class="mode-btn flex-1 py-2 px-3 rounded-lg text-sm border border-slate-200 transition${vt==="pct"?" active":""}">% от дохода</button>
+        </div>
+        <div id="evt-fix-blk" class="${vt==="pct"?"hidden":""}">
+          <label id="exp-lbl" class="${LBL}">${billing==="annual"?"Годовая сумма (€)":"Ежемесячная сумма (€)"}</label>
+          <div class="relative"><input type="number" id="f-val" step="0.01" min="0" value="${vt!=="pct"?(ex?.val||""):""}" placeholder="0.00" oninput="prvExp()" class="${INP} pr-10"><span class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs font-bold">€</span></div>
+          <p id="prv-exp" class="text-xs text-orange-500 mt-1 min-h-[16px]"></p>
+        </div>
+        <div id="evt-pct-blk" class="${vt==="fixed"?"hidden":""}">
+          <label class="${LBL}">% от общего месячного дохода</label>
+          <div class="relative"><input type="number" id="f-pct" step="0.01" min="0" max="100" value="${vt==="pct"?(ex?.val||""):""}" placeholder="10" oninput="prvExpPct()" class="${INP} pr-10"><span class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs font-bold">%</span></div>
+          <p id="prv-exp-pct" class="text-xs text-rose-500 mt-1 min-h-[16px]">Потребительская корзина 10% дохода, развлечения 5%...</p>
+        </div>
+      </div>`;
+    setTimeout(()=>{
+      modeToggle([["evt-fix-btn","evt-fix-blk"],["evt-pct-btn","evt-pct-blk"]]);
+      prvExp(); prvExpPct();
+    },10);
+
+  }else if(type==="asset"){
+    const it=ex?.it||"fixed";
+    mf.innerHTML=`
+      <div><label class="${LBL}">Тип актива</label>
+        <select id="f-atype" class="${INP}">${Object.entries(ITYP).map(([v,l])=>`<option value="${v}"${ex?.atype===v?" selected":""}>${l}</option>`).join("")}</select>
+      </div>
+      <div><label class="${LBL}">Название</label><input type="text" id="f-name" value="${ex?.name||""}" required placeholder="Intel, ETF S&P500, Гараж..." class="${INP}"></div>
+      <div class="grid grid-cols-2 gap-3">
+        <div><label class="${LBL}">Рыночная стоимость (€)</label><input type="number" id="f-cost" step="0.01" min="0" value="${ex?.cost||""}" required placeholder="5000" oninput="prvAsset()" class="${INP}"></div>
+        <div><label class="${LBL}">Вложено своих (€)</label><input type="number" id="f-inv" step="0.01" min="0" value="${ex?.invested||""}" required placeholder="5000" class="${INP}"></div>
+      </div>
+
+      <div class="bg-slate-50 rounded-xl p-3 border border-slate-200 space-y-3">
+        <p class="text-xs font-bold text-slate-600 uppercase tracking-wide">💡 Доход от актива</p>
+        <div class="flex gap-2">
+          <button type="button" id="at-fix-btn" class="mode-btn flex-1 py-2 px-3 rounded-lg text-sm border border-slate-200 transition${it==="fixed"?" active":""}">💶 Фикс. €/мес</button>
+          <button type="button" id="at-pct-btn" class="mode-btn flex-1 py-2 px-3 rounded-lg text-sm border border-slate-200 transition${it==="pct"?" active":""}">% годовых</button>
+        </div>
+        <div id="at-fix-blk" class="${it==="pct"?"hidden":""}">
+          <label class="${LBL}">Доход в месяц (€)</label>
+          <div class="relative"><input type="number" id="f-iv-fix" step="0.01" min="0" value="${it==="fixed"?(ex?.iv||""):""}" placeholder="45.50" class="${INP} pr-10"><span class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs font-bold">€</span></div>
+          <p class="text-[11px] text-slate-400 mt-1">Аренда, дивиденды — чистая прибыль. 0 если нет дохода.</p>
+        </div>
+        <div id="at-pct-blk" class="${it==="fixed"?"hidden":""}">
+          <label class="${LBL}">Процент годовых (%)</label>
+          <div class="relative"><input type="number" id="f-iv-pct" step="0.01" min="0" max="100" value="${it==="pct"?(ex?.iv||""):""}" placeholder="2.0" oninput="prvAsset()" class="${INP} pr-10"><span class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs font-bold">%</span></div>
+          <p id="prv-asset" class="text-xs text-emerald-600 mt-1 min-h-[16px]">Введите % и стоимость — покажем доход/мес</p>
+          <p class="text-[11px] text-slate-400 mt-0.5">Накопление 1.56% год. · Акции 2% год. · Депозит 4.5% год.</p>
+        </div>
+      </div>`;
+    setTimeout(()=>{
+      modeToggle([["at-fix-btn","at-fix-blk"],["at-pct-btn","at-pct-blk"]]);
+      prvAsset();
+    },10);
+
+  }else if(type==="liability"){
+    const aOpts=S.assets.map(a=>`<option value="${a.id}"${ex?.lasset===a.id?" selected":""}>${a.name}</option>`).join("");
+    mf.innerHTML=`
+      <div><label class="${LBL}">Тип кредита</label>
+        <select id="f-ltype" class="${INP}">${Object.entries(LTYP).map(([v,l])=>`<option value="${v}"${ex?.ltype===v?" selected":""}>${l}</option>`).join("")}</select>
+      </div>
+      <div><label class="${LBL}">Название</label><input type="text" id="f-name" value="${ex?.name||""}" required placeholder="Ипотека, кредит на гараж..." class="${INP}"></div>
+      <div class="grid grid-cols-2 gap-3">
+        <div><label class="${LBL}">Остаток долга (€)</label><input type="number" id="f-debt" step="0.01" min="0" value="${ex?.debt||""}" required placeholder="25000" class="${INP}"></div>
+        <div><label class="${LBL}">Платёж / мес (€)</label><input type="number" id="f-pay" step="0.01" min="0" value="${ex?.pay||""}" required placeholder="250" class="${INP}"></div>
+      </div>
+      <div><label class="${LBL}">Связан с активом (необязательно)</label>
+        <select id="f-lasset" class="${INP}"><option value="">— Не связан —</option>${aOpts}</select>
+        <p class="text-[11px] text-slate-400 mt-1">Если кредит взят на покупку актива — выберите его</p>
+      </div>`;
+  }
+
+  const bg=qEl("modal-bg"),card=qEl("modal-card");
+  bg.classList.remove("hidden");
+  document.body.classList.add("modal-open");
+  setTimeout(()=>{card.classList.remove("scale-95");card.classList.add("scale-100");},20);
+}
+
+function closeModal(){
+  const card=qEl("modal-card");
+  card.classList.remove("scale-100");card.classList.add("scale-95");
+  setTimeout(()=>{qEl("modal-bg").classList.add("hidden");document.body.classList.remove("modal-open");},150);
+}
+qEl("modal-bg").addEventListener("click",e=>{if(e.target===qEl("modal-bg"))closeModal();});
+
+// Preview helpers
+function prvInc(){
+  const base=parseFloat(qEl("f-base")?.value)||0,pct=parseFloat(qEl("f-pct")?.value)||0;
+  const p=qEl("prv-inc");
+  if(p)p.textContent=base>0&&pct>0?`→ ${fmt(base*pct/100)} / месяц`:"";
+}
+function prvExp(){
+  const v=parseFloat(qEl("f-val")?.value)||0;
+  const billing=document.querySelector('input[name="billing"]:checked')?.value||"monthly";
+  const p=qEl("prv-exp");
+  if(p)p.textContent=billing==="annual"&&v>0?`→ ${fmt(v/12)} в месяц`:"";
+}
+function prvExpPct(){
+  const pct=parseFloat(qEl("f-pct")?.value)||0;
+  const d=calc();
+  const p=qEl("prv-exp-pct");
+  if(p&&pct>0)p.textContent=`→ ${fmt(d.totalIncome*pct/100)} / мес (от дохода ${fmt(d.totalIncome)})`;
+}
+function prvAsset(){
+  const cost=parseFloat(qEl("f-cost")?.value)||0,pct=parseFloat(qEl("f-iv-pct")?.value)||0;
+  const p=qEl("prv-asset");
+  if(p)p.textContent=cost>0&&pct>0?`→ ${fmt(cost*pct/100/12)} / месяц (${pct}% от ${fmt(cost)} ÷ 12)`:"Введите % и стоимость актива";
+}
+function togIT(){
+  const isT=document.querySelector('input[name="itype"]:checked')?.value==="temporary";
+  qEl("end-blk").classList.toggle("hidden",!isT);
+  qEl("lbl-perm").className=`flex-1 flex items-center gap-2 p-3 border rounded-xl cursor-pointer transition ${!isT?"border-emerald-400 bg-emerald-50":"border-slate-200"}`;
+  qEl("lbl-temp").className=`flex-1 flex items-center gap-2 p-3 border rounded-xl cursor-pointer transition ${isT?"border-teal-400 bg-teal-50":"border-slate-200"}`;
+}
+function togBill(){
+  const isA=document.querySelector('input[name="billing"]:checked')?.value==="annual";
+  const l=qEl("exp-lbl");if(l)l.textContent=isA?"Годовая сумма (€)":"Ежемесячная сумма (€)";
+  prvExp();
+}
+
+// ================================================================
+//  SUBMIT
+// ================================================================
+function handleSubmit(e){
+  e.preventDefault();
+  const type=qEl("m-type").value,eid=qEl("m-id").value;
+
+  function isActive(btnId){return qEl(btnId)?.classList.contains("active");}
+
+  if(type==="income"){
+    const vt=isActive("vt-pct-btn")?"pct":"fixed";
+    const data={
+      name:qEl("f-name").value.trim(),
+      cat:qEl("f-cat").value,
+      vt,
+      val:vt==="pct"?(parseFloat(qEl("f-pct")?.value)||0):(parseFloat(qEl("f-val")?.value)||0),
+      base:vt==="pct"?(parseFloat(qEl("f-base")?.value)||0):null,
+      itype:document.querySelector('input[name="itype"]:checked')?.value||"permanent",
+      end:qEl("f-end")?.value||null
+    };
+    if(eid){const i=S.incomes.findIndex(x=>x.id===eid);if(i!==-1)S.incomes[i]={...S.incomes[i],...data};}
+    else S.incomes.push({id:uid(),...data});
+    toast(eid?"Доход обновлён!":"Доход добавлен!","ok");
+
+  }else if(type==="expense"){
+    const vt=isActive("evt-pct-btn")?"pct":"fixed";
+    const data={
+      name:qEl("f-name").value.trim(),
+      cat:qEl("f-cat").value,
+      billing:document.querySelector('input[name="billing"]:checked')?.value||"monthly",
+      vt,
+      val:vt==="pct"?(parseFloat(qEl("f-pct")?.value)||0):(parseFloat(qEl("f-val")?.value)||0)
+    };
+    if(eid){const i=S.expenses.findIndex(x=>x.id===eid);if(i!==-1)S.expenses[i]={...S.expenses[i],...data};}
+    else S.expenses.push({id:uid(),...data});
+    toast(eid?"Расход обновлён!":"Расход добавлен!","ok");
+
+  }else if(type==="asset"){
+    const it=isActive("at-pct-btn")?"pct":"fixed";
+    const data={
+      atype:qEl("f-atype").value,
+      name:qEl("f-name").value.trim(),
+      cost:parseFloat(qEl("f-cost").value)||0,
+      invested:parseFloat(qEl("f-inv").value)||0,
+      it,
+      iv:it==="pct"?(parseFloat(qEl("f-iv-pct")?.value)||0):(parseFloat(qEl("f-iv-fix")?.value)||0)
+    };
+    if(eid){const i=S.assets.findIndex(x=>x.id===eid);if(i!==-1)S.assets[i]={...S.assets[i],...data};}
+    else S.assets.push({id:uid(),...data});
+    toast(eid?"Актив обновлён!":"Актив добавлен!","ok");
+
+  }else if(type==="liability"){
+    const data={
+      ltype:qEl("f-ltype").value,
+      name:qEl("f-name").value.trim(),
+      debt:parseFloat(qEl("f-debt").value)||0,
+      pay:parseFloat(qEl("f-pay").value)||0,
+      lasset:qEl("f-lasset").value||""
+    };
+    if(eid){const i=S.liabilities.findIndex(x=>x.id===eid);if(i!==-1)S.liabilities[i]={...S.liabilities[i],...data};}
+    else S.liabilities.push({id:uid(),...data});
+    toast(eid?"Пассив обновлён!":"Пассив добавлен!","warn");
+  }
+
+  closeModal();render();
+}
+
+// ================================================================
+//  DELETE
+// ================================================================
+function del(type,id){
+  const map={income:"incomes",expense:"expenses",asset:"assets",liability:"liabilities"};
+  const k=map[type];if(k)S[k]=S[k].filter(x=>x.id!==id);
+  render();toast("Запись удалена","info");
+}
+
+// ================================================================
+//  EXPORT / IMPORT / RESET
+// ================================================================
+function exportData(){
+  const a=document.createElement("a");
+  a.href="data:application/json;charset=utf-8,"+encodeURIComponent(JSON.stringify(S,null,2));
+  a.download=`cashflow_${new Date().toISOString().slice(0,10)}.json`;a.click();
+  toast("JSON сохранён! Храните в Google Drive или Telegram Saved Messages","ok");
+}
+function importData(ev){
+  const f=ev.target.files[0];if(!f)return;
+  const r=new FileReader();
+  r.onload=e=>{
+    try{const p=JSON.parse(e.target.result);
+      if(p.incomes||p.expenses||p.assets||p.liabilities){
+        S={incomes:[],expenses:[],assets:[],liabilities:[],...p};render();toast("Данные загружены!","ok");
+      }else toast("Неверный формат","err");
+    }catch{toast("Ошибка чтения файла","err");}
+  };r.readAsText(f);ev.target.value="";
+}
+function resetDemo(){
+  S=JSON.parse(JSON.stringify(DEMO));saveState();render();toast("Демо-данные восстановлены","info");
+}
+
+// ================================================================
+//  INIT
+// ================================================================
+window.onload=()=>render();
+</script>
+</body>
+</html>
